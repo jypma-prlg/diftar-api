@@ -1,0 +1,382 @@
+openapi: 3.0.3
+
+info:
+  title: Diftar Ledigingen API
+  description: |
+    API voor het opvragen van minicontainer-ledigingen (Diftar) ten behoeve van de
+    "mijnomgeving" van NL-Portal.
+
+    ## Context en autorisatie
+    Deze API wordt uitsluitend aangeroepen door een vertrouwde portal-backend
+    (bijv. NL-Portal). De portal-backend heeft de ingelogde burger al
+    geauthenticeerd (DigiD/eHerkenning) en diens adres opgehaald bij
+    BRP Haal Centraal. Deze API kent zelf geen burgers (geen BSN): autorisatie
+    "deze burger mag alleen zijn eigen adres zien" wordt bij de aanroepende
+    portal-backend afgedwongen, niet hier. Zie `docs/adr/0001-client-credentials-security.md`
+    voor de onderbouwing van deze keuze.
+  version: "1.0.0"
+  contact:
+    name: Beheerder Diftar Ledigingen API
+    email: TODO-beheerder@example.nl
+    url: https://TODO-beheerder.example.nl
+  license:
+    name: CC0-1.0
+    url: https://creativecommons.org/publicdomain/zero/1.0/
+
+servers:
+  - url: https://ontwikkel.diftar-api.example/v1
+    description: TODO - Ontwikkelomgeving (placeholder)
+  - url: https://acceptatie.diftar-api.example/v1
+    description: TODO - Acceptatieomgeving (placeholder)
+  - url: https://productie.diftar-api.example/v1
+    description: TODO - Productieomgeving (placeholder)
+
+tags:
+  - name: Ledigingen
+    description: Registraties van het legen van minicontainers
+  - name: Specificatie
+    description: Machineleesbare API-specificatie
+
+security:
+  - OAuth2ClientCredentials:
+      - diftar.ledigingen.lezen
+
+paths:
+  /openapi.json:
+    get:
+      summary: Download de OpenAPI-specificatie van deze API
+      description: Geeft de machineleesbare OpenAPI 3.0-specificatie van deze API terug, als JSON.
+      operationId: getOpenApiSpecificatie
+      tags:
+        - Specificatie
+      security: []
+      responses:
+        "200":
+          description: De OpenAPI 3.0-specificatie van deze API, als JSON
+          headers:
+            API-Version:
+              $ref: "#/components/headers/ApiVersie"
+            access-control-allow-origin:
+              description: CORS-header conform NL API Design Rules voor de `/openapi.json`-resource.
+              schema:
+                type: string
+                enum:
+                  - "*"
+          content:
+            application/json:
+              schema:
+                type: object
+        "404":
+          $ref: "#/components/responses/NietGevonden"
+
+  /ledigingen:
+    get:
+      summary: Vraag ledigingen op voor een adres of BAG-nummeraanduiding, binnen een periode
+      description: |
+        Geeft de ledigingen (minicontainer-legingen) terug voor een adres of
+        BAG-nummeraanduiding, binnen de opgegeven periode.
+
+        Geef **of** de adresvelden (`postcode` + `huisnummer`, optioneel aangevuld
+        met `huisletter`/`huisnummertoevoeging`), **of** `nummeraanduidingIdentificatie`
+        op - niet beide, en niet geen van beide. Bij een ongeldige combinatie
+        wordt een `400 Bad Request` met Problem Details teruggegeven.
+      operationId: getLedigingen
+      tags:
+        - Ledigingen
+      security:
+        - OAuth2ClientCredentials:
+            - diftar.ledigingen.lezen
+      parameters:
+        - $ref: "#/components/parameters/postcode"
+        - $ref: "#/components/parameters/huisnummer"
+        - $ref: "#/components/parameters/huisletter"
+        - $ref: "#/components/parameters/huisnummertoevoeging"
+        - $ref: "#/components/parameters/nummeraanduidingIdentificatie"
+        - $ref: "#/components/parameters/vanaf"
+        - $ref: "#/components/parameters/totEnMet"
+        - $ref: "#/components/parameters/page"
+        - $ref: "#/components/parameters/pageSize"
+      responses:
+        "200":
+          description: Lijst van ledigingen voor het opgegeven adres/BAG-ID en de opgegeven periode
+          headers:
+            API-Version:
+              $ref: "#/components/headers/ApiVersie"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LedigingenCollectie"
+        "400":
+          $ref: "#/components/responses/OngeldigeAanvraag"
+        "401":
+          $ref: "#/components/responses/NietGeautoriseerd"
+        "403":
+          $ref: "#/components/responses/GeenToegang"
+
+components:
+  parameters:
+    postcode:
+      name: postcode
+      in: query
+      required: false
+      description: |
+        Nederlandse postcode (BAG-notatie, zonder spatie, hoofdletters), bijv. "1234AB".
+        Verplicht in combinatie met `huisnummer` als alternatief voor `nummeraanduidingIdentificatie`.
+      schema:
+        type: string
+        pattern: "^[1-9][0-9]{3}[A-Z]{2}$"
+      example: "1234AB"
+
+    huisnummer:
+      name: huisnummer
+      in: query
+      required: false
+      description: Huisnummer. Verplicht in combinatie met `postcode` als alternatief voor `nummeraanduidingIdentificatie`.
+      schema:
+        type: integer
+        minimum: 1
+      example: 12
+
+    huisletter:
+      name: huisletter
+      in: query
+      required: false
+      description: Huisletter (optioneel, alleen relevant samen met `postcode`/`huisnummer`).
+      schema:
+        type: string
+      example: "A"
+
+    huisnummertoevoeging:
+      name: huisnummertoevoeging
+      in: query
+      required: false
+      description: Huisnummertoevoeging (optioneel, alleen relevant samen met `postcode`/`huisnummer`).
+      schema:
+        type: string
+      example: "bis"
+
+    nummeraanduidingIdentificatie:
+      name: nummeraanduidingIdentificatie
+      in: query
+      required: false
+      description: |
+        BAG-identificatie van de nummeraanduiding (16 cijfers). Alternatief voor
+        de combinatie `postcode`/`huisnummer`/`huisletter`/`huisnummertoevoeging`.
+      schema:
+        type: string
+        pattern: "^[0-9]{16}$"
+      example: "0518200000123456"
+
+    vanaf:
+      name: vanaf
+      in: query
+      required: true
+      description: Begin van de periode (RFC 3339 datum-tijd), inclusief.
+      schema:
+        type: string
+        format: date-time
+      example: "2026-01-01T00:00:00+01:00"
+
+    totEnMet:
+      name: totEnMet
+      in: query
+      required: true
+      description: Einde van de periode (RFC 3339 datum-tijd), inclusief.
+      schema:
+        type: string
+        format: date-time
+      example: "2026-12-31T23:59:59+01:00"
+
+    page:
+      name: page
+      in: query
+      required: false
+      description: Paginanummer, 1-gebaseerd.
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+      example: 1
+
+    pageSize:
+      name: pageSize
+      in: query
+      required: false
+      description: Aantal ledigingen per pagina.
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 200
+        default: 50
+      example: 50
+
+  schemas:
+    Lediging:
+      type: object
+      description: Eén registratie van het legen van een minicontainer.
+      properties:
+        datumTijd:
+          type: string
+          format: date-time
+          description: Tijdstip van de lediging (RFC 3339, Europe/Amsterdam).
+          example: "2026-03-15T08:12:00+01:00"
+        fractieCode:
+          type: string
+          description: |
+            Code van de ingezamelde afvalfractie. Vooralsnog een vrije string;
+            wordt mogelijk een vastgelegde codelijst (zie open actiepunt in
+            `docs/adr/`).
+          example: "GFT"
+        fractieOmschrijving:
+          type: string
+          description: Omschrijving van de afvalfractie.
+          example: "GFT-afval"
+        gewichtInKg:
+          type: number
+          format: double
+          description: Gewicht van de lediging in kilogram.
+          example: 12.5
+      required:
+        - datumTijd
+        - fractieCode
+
+    Link:
+      type: object
+      properties:
+        href:
+          type: string
+          format: uri
+      required:
+        - href
+
+    PaginaLinks:
+      type: object
+      description: Navigatielinks voor paginering (conform NL API Design Rules).
+      properties:
+        self:
+          $ref: "#/components/schemas/Link"
+        first:
+          $ref: "#/components/schemas/Link"
+        last:
+          $ref: "#/components/schemas/Link"
+        next:
+          $ref: "#/components/schemas/Link"
+        prev:
+          $ref: "#/components/schemas/Link"
+      required:
+        - self
+
+    LedigingenCollectie:
+      type: object
+      properties:
+        _links:
+          $ref: "#/components/schemas/PaginaLinks"
+        totaalAantalLedigingen:
+          type: integer
+          description: Totaal aantal ledigingen dat voldoet aan de opgegeven criteria (ongeacht paginering).
+          example: 42
+        ledigingen:
+          type: array
+          items:
+            $ref: "#/components/schemas/Lediging"
+      required:
+        - _links
+        - totaalAantalLedigingen
+        - ledigingen
+
+    Probleem:
+      description: |
+        Foutresponse conform RFC 7807 (Problem Details for HTTP APIs), zoals
+        voorgeschreven door de NL API Design Rules.
+      type: object
+      properties:
+        type:
+          type: string
+          format: uri
+          description: URI die het type probleem identificeert.
+          example: "https://diftar-api.example/problemen/ongeldige-aanvraag"
+        title:
+          type: string
+          description: Korte, mensleesbare samenvatting van het probleemtype.
+          example: "Ongeldige aanvraag"
+        status:
+          type: integer
+          description: HTTP-statuscode.
+          example: 400
+        detail:
+          type: string
+          description: Mensleesbare toelichting specifiek voor dit voorkomen van het probleem.
+          example: "Geef óf postcode en huisnummer, óf nummeraanduidingIdentificatie op, niet beide."
+        instance:
+          type: string
+          format: uri
+          description: URI die dit specifieke voorkomen van het probleem identificeert.
+        invalidParams:
+          type: array
+          description: Details per ongeldige parameter.
+          items:
+            type: object
+            properties:
+              naam:
+                type: string
+                example: "nummeraanduidingIdentificatie"
+              reden:
+                type: string
+                example: "Mag niet gecombineerd worden met postcode/huisnummer."
+            required:
+              - naam
+              - reden
+      required:
+        - type
+        - title
+        - status
+
+  responses:
+    OngeldigeAanvraag:
+      description: Ongeldige of ontbrekende/conflicterende parameters
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Probleem"
+
+    NietGeautoriseerd:
+      description: Ontbrekend of ongeldig access token
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Probleem"
+
+    GeenToegang:
+      description: Access token heeft onvoldoende scope voor deze operatie
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Probleem"
+
+    NietGevonden:
+      description: Opgevraagde resource bestaat niet
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Probleem"
+
+  headers:
+    ApiVersie:
+      description: Volledige versienummer van deze API (conform NL API Design Rules, core/version-header).
+      schema:
+        type: string
+      example: "1.0.0"
+
+  securitySchemes:
+    OAuth2ClientCredentials:
+      type: oauth2
+      description: |
+        OAuth2 Client Credentials flow conform het Logius "Direct Access Client"-
+        profiel (zie `docs/adr/0001-client-credentials-security.md`). De
+        aanroepende partij (portal-backend) is zelf verantwoordelijk voor het
+        afdwingen dat een burger alleen zijn eigen gegevens opvraagt.
+      flows:
+        clientCredentials:
+          tokenUrl: https://TODO-authorisatieserver.example/token
+          scopes:
+            diftar.ledigingen.lezen: Leesrechten op ledigingen

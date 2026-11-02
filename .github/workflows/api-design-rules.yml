@@ -1,0 +1,30 @@
+name: NL API Design Rules
+
+on:
+  push:
+    paths:
+      - "diftar-openapi.yaml"
+      - ".github/workflows/api-design-rules.yml"
+  pull_request:
+    paths:
+      - "diftar-openapi.yaml"
+      - ".github/workflows/api-design-rules.yml"
+
+jobs:
+  lint:
+    name: Valideer tegen NL API Design Rules (developer.overheid.nl)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Lint met Spectral tegen de officiele ADR-ruleset
+        run: >
+          npx --yes @stoplight/spectral-cli@latest lint diftar-openapi.yaml
+          --ruleset https://static.developer.overheid.nl/adr/ruleset.yaml
+          --fail-severity=warn

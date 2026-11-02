@@ -1,0 +1,27 @@
+name: OAS3-validatie
+
+on:
+  push:
+    paths:
+      - "diftar-openapi.yaml"
+      - ".github/workflows/oas3-validatie.yml"
+  pull_request:
+    paths:
+      - "diftar-openapi.yaml"
+      - ".github/workflows/oas3-validatie.yml"
+
+jobs:
+  lint:
+    name: Valideer tegen OpenAPI 3.0-standaard
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Lint met Redocly CLI (OpenAPI 3.0-conformiteit)
+        run: npx --yes @redocly/cli@latest lint diftar-openapi.yaml --format=github-actions
