@@ -171,21 +171,21 @@ components:
       name: vanaf
       in: query
       required: true
-      description: Begin van de periode (RFC 3339 datum-tijd), inclusief.
+      description: Begin van de periode (RFC 3339 datum), inclusief.
       schema:
         type: string
-        format: date-time
-      example: "2026-01-01T00:00:00+01:00"
+        format: date
+      example: "2026-01-01"
 
     totEnMet:
       name: totEnMet
       in: query
       required: true
-      description: Einde van de periode (RFC 3339 datum-tijd), inclusief.
+      description: Einde van de periode (RFC 3339 datum), inclusief.
       schema:
         type: string
-        format: date-time
-      example: "2026-12-31T23:59:59+01:00"
+        format: date
+      example: "2026-12-31"
 
     page:
       name: page
