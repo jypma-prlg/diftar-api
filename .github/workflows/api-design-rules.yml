@@ -1,10 +1,6 @@
 name: NL API Design Rules
 
 on:
-  push:
-    paths:
-      - "diftar-openapi.yaml"
-      - ".github/workflows/api-design-rules.yml"
   pull_request:
     paths:
       - "diftar-openapi.yaml"
