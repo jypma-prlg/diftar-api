@@ -1,10 +1,6 @@
 name: OAS3-validatie
 
 on:
-  push:
-    paths:
-      - "diftar-openapi.yaml"
-      - ".github/workflows/oas3-validatie.yml"
   pull_request:
     paths:
       - "diftar-openapi.yaml"
