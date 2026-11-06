@@ -6,6 +6,7 @@ on:
       - main
     paths:
       - "diftar-openapi.yaml"
+      - "mise.toml"
       - ".github/workflows/publiceer-documentatie.yml"
   workflow_dispatch: {}
 
@@ -26,15 +27,13 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v7
-        with:
-          node-version: "24"
+      - name: Installeer tools uit mise.toml
+        uses: jdx/mise-action@v5
 
       - name: Bouw statische Redoc-pagina
         run: |
           mkdir -p site
-          npx --yes @redocly/cli@latest build-docs diftar-openapi.yaml --output site/index.html
+          redocly build-docs diftar-openapi.yaml --output site/index.html
 
       - name: Configureer GitHub Pages
         uses: actions/configure-pages@v6

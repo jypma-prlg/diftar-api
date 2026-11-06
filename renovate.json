@@ -1,0 +1,38 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended"],
+  "timezone": "Europe/Amsterdam",
+  "schedule": ["before 6am on monday"],
+  "enabledManagers": ["mise", "github-actions", "custom.regex"],
+  "customManagers": [
+    {
+      "customType": "regex",
+      "description": "Versie van de NL API Design Rules (ADR_VERSION in mise.toml)",
+      "managerFilePatterns": ["/(^|/)mise\\.toml$/"],
+      "matchStrings": ["ADR_VERSION\\s*=\\s*\"(?<currentValue>[^\"]+)\""],
+      "depNameTemplate": "Logius-standaarden/API-Design-Rules",
+      "datasourceTemplate": "github-releases",
+      "extractVersionTemplate": "^v(?<version>.+)$"
+    }
+  ],
+  "packageRules": [
+    {
+      "description": "Tooling-updates mogen automatisch mergen zodra alle checks groen zijn",
+      "matchUpdateTypes": ["minor", "patch", "pin", "digest"],
+      "automerge": true
+    },
+    {
+      "description": "Major-updates altijd handmatig beoordelen",
+      "matchUpdateTypes": ["major"],
+      "automerge": false
+    },
+    {
+      "description": "ADR-versie en DON Checker samen updaten, zodat de checker de nieuwe versie ondersteunt",
+      "groupName": "nl-api-design-rules",
+      "matchPackageNames": [
+        "Logius-standaarden/API-Design-Rules",
+        "/don-checker/"
+      ]
+    }
+  ]
+}
