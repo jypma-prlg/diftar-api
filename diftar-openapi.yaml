@@ -34,6 +34,10 @@ servers:
 tags:
   - name: Ledigingen
     description: Registraties van het legen van minicontainers
+  - name: Stortingen
+    description: Registraties van stortingen in verzamelcontainers
+  - name: OAuth
+    description: OAuth2 Client Credentials tokenuitgifte
   - name: Specificatie
     description: Machineleesbare API-specificatie
 
