@@ -50,7 +50,7 @@ paths:
       operationId: getOpenApiSpecificatie
       tags:
         - Specificatie
-      security: [ ]
+      security: []
       responses:
         "200":
           description: De OpenAPI 3.0-specificatie van deze API, als JSON
@@ -308,7 +308,7 @@ components:
       name: pageSize
       in: query
       required: false
-      description: Aantal resultaten per pagina.
+      description: Aantal ledigingen per pagina.
       schema:
         type: integer
         minimum: 1
