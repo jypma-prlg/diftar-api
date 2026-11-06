@@ -3,7 +3,7 @@
 OpenAPI-specificatie voor het opvragen van minicontainer-ledigingen (Diftar) ten
 behoeve van de "mijnomgeving" van NL-Portal.
 
-📖 **[Bekijk de API-documentatie](https://jypma-prlg.github.io/diftar-api/)** —
+📖 **[Bekijk de API-documentatie](https://pinkroccade.github.io/diftar-api/)** —
 gegenereerd met Redoc, automatisch bijgewerkt bij elke wijziging aan
 `diftar-openapi.yaml` (zie [`publiceer-documentatie.yml`](.github/workflows/publiceer-documentatie.yml)).
 
