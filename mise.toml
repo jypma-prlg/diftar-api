@@ -1,0 +1,29 @@
+# Enige bron van waarheid voor tool- en standaardversies.
+# Lokaal en in CI (via jdx/mise-action) worden dezelfde versies en taken gebruikt.
+# Renovate houdt alle versies hieronder bij (zie renovate.json).
+
+[tools]
+node = "24"
+"npm:@redocly/cli" = "2.76.0"
+# Officieel pakket van developer.overheid.nl, maar onder de downloaddrempel van
+# aube (<1000/week). Alleen die check wordt overgeslagen; provenance- en
+# advisory-checks blijven actief.
+"npm:@developer-overheid-nl/don-checker" = { version = "1.4.0", allow_low_downloads = true }
+
+[env]
+# Versie van de NL API Design Rules waartegen getoetst wordt.
+# Renovate volgt de releases van Logius-standaarden/API-Design-Rules.
+ADR_VERSION = "2.2.0"
+OAS_SPEC = "diftar-openapi.yaml"
+
+[tasks.validate-oas-spec]
+description = "Valideer de spec tegen de OpenAPI 3.0-standaard (Redocly CLI)"
+run = 'redocly lint {{env.OAS_SPEC}}{% if get_env(name="GITHUB_ACTIONS", default="") == "true" %} --format=github-actions{% endif %}'
+
+[tasks.validate-nl-api-design-rules]
+description = "Valideer de spec tegen de NL API Design Rules (DON Checker)"
+run = "don-checker validate --standard adr --version {{env.ADR_VERSION}} --input {{env.OAS_SPEC}} --fail-on warn"
+
+[tasks.validate-all]
+description = "Draai alle validaties op de spec"
+depends = ["validate-oas-spec", "validate-nl-api-design-rules"]
