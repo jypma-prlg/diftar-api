@@ -43,35 +43,30 @@ security:
       - diftar.stortingen.lezen
 
 paths:
-  /openapi.yaml:
+  /openapi.json:
     get:
       summary: Download de OpenAPI-specificatie van deze API
-      description: Geeft de machineleesbare OpenAPI 3.0-specificatie van deze API terug, als YAML.
+      description: Geeft de machineleesbare OpenAPI 3.0-specificatie van deze API terug, als JSON.
       operationId: getOpenApiSpecificatie
       tags:
         - Specificatie
-      security: []
+      security: [ ]
       responses:
         "200":
-          description: De OpenAPI 3.0-specificatie van deze API, als YAML
+          description: De OpenAPI 3.0-specificatie van deze API, als JSON
           headers:
             API-Version:
               $ref: "#/components/headers/ApiVersie"
             access-control-allow-origin:
-              description: CORS-header conform NL API Design Rules voor de specificatie-resource.
+              description: CORS-header conform NL API Design Rules voor de `/openapi.json`-resource.
               schema:
                 type: string
                 enum:
                   - "*"
-            Content-Disposition:
-              description: Bestandsnaam voor download.
-              schema:
-                type: string
-                example: attachment; filename="openapi.yaml"
           content:
-            application/vnd.oai.openapi+yaml:
+            application/json:
               schema:
-                type: string
+                type: object
         "404":
           $ref: "#/components/responses/NietGevonden"
 
@@ -196,6 +191,9 @@ paths:
       responses:
         "200":
           description: Access token issued
+          headers:
+            API-Version:
+              $ref: "#/components/headers/ApiVersie"
           content:
             application/json:
               schema:
