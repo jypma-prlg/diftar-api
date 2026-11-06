@@ -14,7 +14,7 @@ info:
     "deze burger mag alleen zijn eigen adres zien" wordt bij de aanroepende
     portal-backend afgedwongen, niet hier. Zie `docs/adr/0001-client-credentials-security.md`
     voor de onderbouwing van deze keuze.
-  version: "1.0.0"
+  version: "1.0.1"
   contact:
     name: Beheerder Diftar Ledigingen API
     email: TODO-beheerder@example.nl
@@ -34,12 +34,17 @@ servers:
 tags:
   - name: Ledigingen
     description: Registraties van het legen van minicontainers
+  - name: Stortingen
+    description: Registraties van stortingen in verzamelcontainers
+  - name: OAuth
+    description: OAuth2 Client Credentials tokenuitgifte
   - name: Specificatie
     description: Machineleesbare API-specificatie
 
 security:
   - OAuth2ClientCredentials:
       - diftar.ledigingen.lezen
+      - diftar.stortingen.lezen
 
 paths:
   /openapi.json:
@@ -112,6 +117,111 @@ paths:
           $ref: "#/components/responses/NietGeautoriseerd"
         "403":
           $ref: "#/components/responses/GeenToegang"
+
+  /stortingen:
+    get:
+      summary: Vraag stortingen op voor een adres of BAG-nummeraanduiding, binnen een periode
+      description: |
+        Geeft de stortingen in verzamelcontainers terug voor een adres of
+        BAG-nummeraanduiding, binnen de opgegeven periode. Alleen transacties
+        van type 101, gekoppeld via de pas van het adres.
+
+        Geef **of** de adresvelden (`postcode` + `huisnummer`, optioneel aangevuld
+        met `huisletter`/`huisnummertoevoeging`), **of** `nummeraanduidingIdentificatie`
+        op - niet beide, en niet geen van beide. Bij een ongeldige combinatie
+        wordt een `400 Bad Request` met Problem Details teruggegeven.
+      operationId: getStortingen
+      tags:
+        - Stortingen
+      security:
+        - OAuth2ClientCredentials:
+            - diftar.stortingen.lezen
+      parameters:
+        - $ref: "#/components/parameters/postcode"
+        - $ref: "#/components/parameters/huisnummer"
+        - $ref: "#/components/parameters/huisletter"
+        - $ref: "#/components/parameters/huisnummertoevoeging"
+        - $ref: "#/components/parameters/nummeraanduidingIdentificatie"
+        - $ref: "#/components/parameters/vanaf"
+        - $ref: "#/components/parameters/totEnMet"
+        - $ref: "#/components/parameters/page"
+        - $ref: "#/components/parameters/pageSize"
+      responses:
+        "200":
+          description: Lijst van stortingen voor het opgegeven adres/BAG-ID en de opgegeven periode
+          headers:
+            API-Version:
+              $ref: "#/components/headers/ApiVersie"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StortingenCollectie"
+        "400":
+          $ref: "#/components/responses/OngeldigeAanvraag"
+        "401":
+          $ref: "#/components/responses/NietGeautoriseerd"
+        "403":
+          $ref: "#/components/responses/GeenToegang"
+
+  /oauth/token:
+    post:
+      summary: OAuth2 client credentials token
+      description: |
+        Geeft een opaque Bearer access token uit voor geldige client credentials
+        (form body of HTTP Basic), conform RFC 6749 client_credentials.
+      operationId: postOauthToken
+      tags:
+        - OAuth
+      security: [ ]
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required:
+                - grant_type
+                - client_id
+                - client_secret
+              properties:
+                grant_type:
+                  type: string
+                  enum:
+                    - client_credentials
+                client_id:
+                  type: string
+                client_secret:
+                  type: string
+      responses:
+        "200":
+          description: Access token issued
+          headers:
+            API-Version:
+              $ref: "#/components/headers/ApiVersie"
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - access_token
+                  - token_type
+                  - expires_in
+                properties:
+                  access_token:
+                    type: string
+                  token_type:
+                    type: string
+                    example: Bearer
+                  expires_in:
+                    type: integer
+                    example: 3600
+                  scope:
+                    type: string
+                    example: diftar.ledigingen.lezen diftar.stortingen.lezen
+        "400":
+          description: Invalid grant_type
+        "401":
+          description: Invalid client credentials
 
 components:
   parameters:
@@ -240,6 +350,42 @@ components:
         - datumTijd
         - fractieCode
 
+    Storting:
+      type: object
+      description: Eén registratie van een storting in een verzamelcontainer.
+      properties:
+        datumTijd:
+          type: string
+          format: date-time
+          description: Tijdstip van de storting (RFC 3339, Europe/Amsterdam).
+          example: "2026-03-15T08:12:00+01:00"
+        fractieCode:
+          type: string
+          description: |
+            Code van de ingezamelde afvalfractie. Vooralsnog een vrije string;
+            wordt mogelijk een vastgelegde codelijst (zie open actiepunt in
+            `docs/adr/`).
+          example: "GFT"
+        fractieOmschrijving:
+          type: string
+          description: Omschrijving van de afvalfractie.
+          example: "GFT-afval"
+        volumeInLiters:
+          type: integer
+          description: Volume van de storting in liters.
+          example: 30
+        VerzamelcontainerTitel:
+          type: string
+          description: Titel van de verzamelcontainer.
+          example: "Ondergrondse container GFT Marktstraat"
+        VerzamelcontainerId:
+          type: string
+          description: Externe identificatie van de verzamelcontainer.
+          example: "CC-00123"
+      required:
+        - datumTijd
+        - fractieCode
+
     Link:
       type: object
       properties:
@@ -283,6 +429,24 @@ components:
         - _links
         - totaalAantalLedigingen
         - ledigingen
+
+    StortingenCollectie:
+      type: object
+      properties:
+        _links:
+          $ref: "#/components/schemas/PaginaLinks"
+        totaalAantalStortingen:
+          type: integer
+          description: Totaal aantal stortingen dat voldoet aan de opgegeven criteria (ongeacht paginering).
+          example: 42
+        stortingen:
+          type: array
+          items:
+            $ref: "#/components/schemas/Storting"
+      required:
+        - _links
+        - totaalAantalStortingen
+        - stortingen
 
     Probleem:
       description: |
@@ -377,6 +541,7 @@ components:
         afdwingen dat een burger alleen zijn eigen gegevens opvraagt.
       flows:
         clientCredentials:
-          tokenUrl: https://TODO-authorisatieserver.example/token
+          tokenUrl: oauth/token
           scopes:
             diftar.ledigingen.lezen: Leesrechten op ledigingen
+            diftar.stortingen.lezen: Leesrechten op stortingen
