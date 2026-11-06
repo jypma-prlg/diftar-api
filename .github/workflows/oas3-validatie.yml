@@ -4,11 +4,14 @@ on:
   push:
     paths:
       - "diftar-openapi.yaml"
+      - "mise.toml"
       - ".github/workflows/oas3-validatie.yml"
   pull_request:
     paths:
       - "diftar-openapi.yaml"
+      - "mise.toml"
       - ".github/workflows/oas3-validatie.yml"
+  workflow_dispatch: {}
 
 jobs:
   lint:
@@ -18,10 +21,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v7
-        with:
-          node-version: "24"
+      - name: Installeer tools uit mise.toml
+        uses: jdx/mise-action@v5
 
       - name: Lint met Redocly CLI (OpenAPI 3.0-conformiteit)
-        run: npx --yes @redocly/cli@latest lint diftar-openapi.yaml --format=github-actions
+        run: mise run validate-oas-spec

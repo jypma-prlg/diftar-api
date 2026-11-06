@@ -38,11 +38,25 @@ Twee GitHub Actions-workflows valideren elke wijziging aan de spec:
 - [`api-design-rules.yml`](.github/workflows/api-design-rules.yml) — voldoet het aan de
   [NL API Design Rules](https://developer.overheid.nl/kennisbank/api-ontwikkeling/standaarden/api-design-rules/)?
 
+Beide workflows roepen dezelfde [mise](https://mise.jdx.dev/)-taken aan die je
+ook lokaal draait. Tool- en standaardversies (Redocly CLI, DON Checker,
+ADR-versie) staan vastgepind in [`mise.toml`](mise.toml) en worden door
+[Renovate](renovate.json) bijgehouden.
+
 Lokaal draaien:
 
 ```bash
-npx @redocly/cli@latest lint diftar-openapi.yaml
-npx @stoplight/spectral-cli@latest lint diftar-openapi.yaml --ruleset https://static.developer.overheid.nl/adr/ruleset.yaml
+mise run validate-all
+```
+
+Of afzonderlijk:
+
+```bash
+mise run validate-oas-spec
+```
+
+```bash
+mise run validate-nl-api-design-rules
 ```
 
 ## Open punten
