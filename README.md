@@ -10,9 +10,6 @@ gegenereerd met Redoc, automatisch bijgewerkt bij elke wijziging aan
 ## Inhoud
 
 - [`diftar-openapi.yaml`](diftar-openapi.yaml) — de API-specificatie (OpenAPI 3.0.3).
-- [`diftar-openapi-src.yaml`](diftar-openapi-src.yaml) — de oorspronkelijke,
-  door de leverancier (NewWaste) aangeleverde versie. Bewaard als historische
-  referentie; niet meer onderhouden.
 - [`GLOSSARY.md`](GLOSSARY.md) — domeinbegrippen.
 - [`STANDARDS.md`](STANDARDS.md) — welke standaarden zijn gebruikt en hoe getoetst.
 - [`docs/adr/`](docs/adr/) — architectuurbeslissingen (ADR's).
