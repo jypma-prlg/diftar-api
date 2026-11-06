@@ -2,10 +2,6 @@ name: NL API Design Rules
 
 on:
   pull_request:
-    paths:
-      - "diftar-openapi.yaml"
-      - "mise.toml"
-      - ".github/workflows/api-design-rules.yml"
   workflow_dispatch: {}
 
 jobs:
